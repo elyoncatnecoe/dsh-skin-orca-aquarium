@@ -55,6 +55,12 @@ window.__ModuleLoader__.load({
     const BACKDROP_CLASS = 'orca-sea-backdrop';
     const SCENE_CLASS = 'orca-sea-scene';
     const INK_CLASS = 'orca-sea-ink';
+    /** The drifting maple leaves — the references' warm counterpoint. */
+    const LEAF_CLASS = 'orca-sea-leaf';
+    /** The fine sparkle over the whole frame. */
+    const MOTE_CLASS = 'orca-sea-mote';
+    /** The corner warmth (warm bottom-right, cool top-left). */
+    const GLOW_CLASS = 'orca-sea-glow';
     const FRAME_ATTR = 'data-orca-glass-frame';
     const PART_ATTR = 'data-orca-plate';
     /** The sidebar's inner root, which paints its own fill over the column. */
@@ -158,6 +164,63 @@ window.__ModuleLoader__.load({
       "</g></svg>\")";
 
     /**
+     * Maple leaves, as a mask for the same reason the koi are: one shape serves
+     * both palettes and the tint stays in CSS.
+     *
+     * This is the reference's loudest single effect. 夜间参考1 carries four big
+     * amber maple leaves in its corners — the only warm thing in an otherwise
+     * all-blue frame — and c5 repeats them down the left edge. They are what
+     * stops the composition reading as "blue filter over a screenshot": warm
+     * against cool is the whole colour idea, and the corners are where it lives.
+     *
+     * Drawn as a five-lobed maple with a stem, at four sizes/rotations. The
+     * lobes are asymmetric on purpose (a symmetric star reads as clip-art; the
+     * references' leaves are all slightly swept).
+     */
+    const LEAF_TILE =
+      "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='680' height='680' viewBox='0 0 680 680'><g fill='%23fff'>" +
+      /* Big leaf, upper left, swept. */
+      "<g transform='translate(64 96) rotate(-22) scale(2.6)'>" +
+      "<path d='M0 0 L-3 -11 L-13 -9 L-8 -17 L-18 -21 L-8 -24 L-11 -33 L-2 -28 L0 -40 L2 -28 L11 -33 L8 -24 L18 -21 L8 -17 L13 -9 L3 -11 Z'/>" +
+      "<path d='M0 0 L0 14 L1.6 14 L1.2 0 Z'/>" +
+      "</g>" +
+      /* Mid leaf, right edge. */
+      "<g transform='translate(596 196) rotate(38) scale(1.9)'>" +
+      "<path d='M0 0 L-3 -11 L-13 -9 L-8 -17 L-18 -21 L-8 -24 L-11 -33 L-2 -28 L0 -40 L2 -28 L11 -33 L8 -24 L18 -21 L8 -17 L13 -9 L3 -11 Z'/>" +
+      "<path d='M0 0 L0 14 L1.6 14 L1.2 0 Z'/>" +
+      "</g>" +
+      /* Small leaf, lower left. */
+      "<g transform='translate(126 566) rotate(14) scale(1.35)'>" +
+      "<path d='M0 0 L-3 -11 L-13 -9 L-8 -17 L-18 -21 L-8 -24 L-11 -33 L-2 -28 L0 -40 L2 -28 L11 -33 L8 -24 L18 -21 L8 -17 L13 -9 L3 -11 Z'/>" +
+      "<path d='M0 0 L0 14 L1.6 14 L1.2 0 Z'/>" +
+      "</g>" +
+      /* Tiny leaf, lower right, faint. */
+      "<g transform='translate(520 604) rotate(-48) scale(.95)' opacity='.6'>" +
+      "<path d='M0 0 L-3 -11 L-13 -9 L-8 -17 L-18 -21 L-8 -24 L-11 -33 L-2 -28 L0 -40 L2 -28 L11 -33 L8 -24 L18 -21 L8 -17 L13 -9 L3 -11 Z'/>" +
+      "<path d='M0 0 L0 14 L1.6 14 L1.2 0 Z'/>" +
+      "</g>" +
+      /* One drifting mid-frame, faint — the references have leaves over the art, not just at the rim. */
+      "<g transform='translate(348 402) rotate(8) scale(.7)' opacity='.45'>" +
+      "<path d='M0 0 L-3 -11 L-13 -9 L-8 -17 L-18 -21 L-8 -24 L-11 -33 L-2 -28 L0 -40 L2 -28 L11 -33 L8 -24 L18 -21 L8 -17 L13 -9 L3 -11 Z'/>" +
+      "</g>" +
+      "</g></svg>\")";
+
+    /**
+     * Drifting motes: the references' fine sparkle, which sits over everything
+     * and is what makes the frame feel like air rather than a flat gradient.
+     * Deliberately tiny and sparse — a dense field reads as noise.
+     */
+    const MOTE_TILE =
+      "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='320'><g fill='%23fff'>" +
+      "<circle cx='38' cy='52' r='1.5'/><circle cx='132' cy='26' r='1'/>" +
+      "<circle cx='214' cy='88' r='1.8'/><circle cx='286' cy='44' r='1.1'/>" +
+      "<circle cx='72' cy='148' r='1.2'/><circle cx='176' cy='126' r='1.6'/>" +
+      "<circle cx='258' cy='182' r='1'/><circle cx='24' cy='226' r='1.7'/>" +
+      "<circle cx='118' cy='248' r='1.1'/><circle cx='204' cy='286' r='1.4'/>" +
+      "<circle cx='292' cy='244' r='1.2'/><circle cx='156' cy='196' r='.9'/>" +
+      "</g></svg>\")";
+
+    /**
      * The palette, as theme-service override tokens.
      *
      * `theme.overrideTokens` takes `token -> { light, dark }`, so the shell
@@ -207,6 +270,37 @@ window.__ModuleLoader__.load({
       // caption; the day reference's deeper teal from its rail circles.
       '--dsw-alias-brand-primary': { dark: '#5b9bc1', light: '#2f7d99' },
       '--dsw-alias-state-business-primary': { dark: '#5b9bc1', light: '#2f7d99' },
+
+      /* ---- the `--dsw-specific-*` family ---- *
+       *
+       * These are the surfaces the *components* paint with, and they are not
+       * part of the alias layer: the user bubble uses `--dsw-specific-bubble`,
+       * menus use `--dsw-specific-menu`, the composer uses
+       * `--dsw-specific-input-major`. Leaving them at the shell default was why
+       * the chat bubbles and menus still looked like the stock app on top of a
+       * recoloured shell — the skin simply did not reach them.
+       *
+       * The bubble is the important one. In the references every raised surface
+       * is a *lighter* plate over the water (the selected row is #a6bfd3 over a
+       * #4b658a field), so the bubble takes the reference's selected-plate value
+       * rather than the stock pale-deepseek tint.
+       */
+      '--dsw-specific-bubble': { dark: 'rgba(88,114,152,.92)', light: 'rgba(196,220,227,.92)' },
+      // The composer and composer-attached cards: one step deeper than a bubble
+      // so an input reads as recessed while a sent message reads as raised.
+      '--dsw-specific-input-major': { dark: 'rgba(58,78,108,.90)', light: 'rgba(207,231,237,.92)' },
+      // Menus and the command palette: opaque enough to read over the aquarium.
+      '--dsw-specific-menu': { dark: 'rgba(34,44,64,.97)', light: 'rgba(232,244,247,.97)' },
+      // Combo/mode selectors: the reference's chip colour.
+      '--dsw-specific-selector': { dark: 'rgba(69,93,123,.92)', light: 'rgba(177,213,225,.92)' },
+      // Tooltip/tip surfaces: dense, and slightly warm-neutral so a tip does not
+      // read as another card.
+      '--dsw-specific-tip': { dark: 'rgba(28,38,56,.96)', light: 'rgba(45,64,84,.94)' },
+      // Sidebar navigation states: the reference's rail highlight is a *sky*
+      // wash, not a grey one, which is what makes the rail feel lit.
+      '--dsw-specific-sidebar-nav-item-active': { dark: 'rgba(96,140,178,.34)', light: 'rgba(126,186,212,.34)' },
+      '--dsw-specific-sidebar-nav-item-active-accent': { dark: '#7fc4e0', light: '#2f7d99' },
+      '--dsw-specific-sidebar-nav-item-hover': { dark: 'rgba(150,190,222,.12)', light: 'rgba(29,51,72,.06)' },
     };
 
     /**
@@ -290,9 +384,21 @@ window.__ModuleLoader__.load({
       '.', BACKDROP_CLASS, '{',
       'position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;',
       '--orca-ink:rgba(214,236,248,.16);',
+      // The leaves are the one warm thing in the frame, so they stay saturated
+      // and sit above the water's own blue. Sampled from 夜间参考1's corners
+      // (#e08c3c..#f5a44e), not invented.
+      '--orca-leaf:rgba(228,140,72,.30);',
+      '--orca-mote:rgba(226,242,255,.55);',
+      '--orca-glow-warm:rgba(238,164,88,.16);',
+      '--orca-glow-cool:rgba(120,196,232,.13);',
       '}',
       'body:not([data-ds-dark-theme]) .', BACKDROP_CLASS, '{',
       '--orca-ink:rgba(22,58,84,.11);',
+      // Daylight: leaves stay warm but thin out, and the glow turns into haze.
+      '--orca-leaf:rgba(214,132,68,.22);',
+      '--orca-mote:rgba(255,255,255,.70);',
+      '--orca-glow-warm:rgba(246,196,132,.20);',
+      '--orca-glow-cool:rgba(150,214,238,.20);',
       '}',
       '.', SCENE_CLASS, '{position:absolute;inset:0;}',
       '.', INK_CLASS, '{',
@@ -301,6 +407,58 @@ window.__ModuleLoader__.load({
       '-webkit-mask-image:', INK_TILE, ';mask-image:', INK_TILE, ';',
       '-webkit-mask-repeat:repeat;mask-repeat:repeat;',
       '-webkit-mask-size:420px 420px;mask-size:420px 420px;',
+      '}',
+      // The maple leaves: the references' warm counterpoint to an all-blue
+      // frame, and the single strongest thing the stock app does not have.
+      // Painted above the ink so a leaf reads as nearer than a koi, and under
+      // the plates so it never lands on text. `screen`-free: a plain mask keeps
+      // it cheap and lets the two palettes pick their own tint.
+      '.', LEAF_CLASS, '{',
+      'position:absolute;inset:0;pointer-events:none;',
+      'background-color:var(--orca-leaf);',
+      '-webkit-mask-image:', LEAF_TILE, ';mask-image:', LEAF_TILE, ';',
+      '-webkit-mask-repeat:repeat;mask-repeat:repeat;',
+      '-webkit-mask-size:680px 680px;mask-size:680px 680px;',
+      // A very slow drift, so the frame is alive without ever being busy. The
+      // 0.001 x-shift is deliberate: leaves fall, they do not travel sideways.
+      'animation:orca-leaf-drift 64s linear infinite;',
+      'will-change:transform;',
+      '}',
+      '@keyframes orca-leaf-drift{',
+      'from{transform:translate3d(0,-680px,0);}',
+      'to{transform:translate3d(38px,0,0);}',
+      '}',
+      // The sparkle. Two layers at different phases so the twinkle never
+      // pulses in lockstep, which is what makes a plain loop read as a loop.
+      '.', MOTE_CLASS, '{',
+      'position:absolute;inset:0;pointer-events:none;',
+      'background-color:var(--orca-mote);',
+      '-webkit-mask-image:', MOTE_TILE, ';mask-image:', MOTE_TILE, ';',
+      '-webkit-mask-repeat:repeat;mask-repeat:repeat;',
+      '-webkit-mask-size:320px 320px;mask-size:320px 320px;',
+      'animation:orca-mote-drift 38s linear infinite,orca-mote-twinkle 5.5s ease-in-out infinite alternate;',
+      '}',
+      '@keyframes orca-mote-drift{',
+      'from{transform:translate3d(0,0,0);}',
+      'to{transform:translate3d(-320px,-320px,0);}',
+      '}',
+      '@keyframes orca-mote-twinkle{',
+      'from{opacity:.45;}to{opacity:1;}',
+      '}',
+      // The corner warmth. The references are lit from a warm bottom-right
+      // corner (夜间参考1's lantern glow, c3's cyan pool); this is that light
+      // as a paint layer rather than a filter, so it costs nothing per frame.
+      '.', GLOW_CLASS, '{',
+      'position:absolute;inset:0;pointer-events:none;',
+      'background-image:',
+      'radial-gradient(58% 46% at 100% 100%,var(--orca-glow-warm),transparent 68%),',
+      'radial-gradient(46% 40% at 0% 0%,var(--orca-glow-cool),transparent 66%);',
+      '}',
+      // Reduced motion: the whole point of these layers is slow ambient drift,
+      // so honouring the preference means freezing them rather than removing
+      // them — the colour stays, the movement stops.
+      '@media (prefers-reduced-motion:reduce){',
+      '.', LEAF_CLASS, ',', '.', MOTE_CLASS, '{animation:none;}',
       '}',
     ].join('');
 
@@ -524,11 +682,25 @@ window.__ModuleLoader__.load({
       const ink = document.createElement('div');
       ink.className = INK_CLASS;
 
-      // The scene first, then the ink artwork over it. No colour wash: the
-      // vendor's theme owns the water, and a second veil over it washed the
-      // orca out. Both children are inside the same click-through layer, so
-      // the app above is untouched.
-      layer.append(sceneHost, ink);
+      const glow = document.createElement('div');
+      glow.className = GLOW_CLASS;
+
+      const leaf = document.createElement('div');
+      leaf.className = LEAF_CLASS;
+
+      const mote = document.createElement('div');
+      mote.className = MOTE_CLASS;
+
+      // Bottom to top, and the order is the depth order the references use:
+      //   scene  — the aquarium
+      //   glow   — the corner light that sits *in* the water
+      //   ink    — the koi silhouettes, which read as far away
+      //   leaf   — the leaves, which read as near (they drift across the art)
+      //   mote   — the fine sparkle, which is the closest thing of all
+      // No colour wash: the vendor's theme owns the water, and a second veil
+      // over it washed the orca out. Every child is inside the same
+      // click-through layer, so the app above is untouched.
+      layer.append(sceneHost, glow, ink, leaf, mote);
       document.body.appendChild(layer);
 
       let scene = null;
