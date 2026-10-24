@@ -1,0 +1,7 @@
+﻿# 构建产物 lib/client.js 故意纳入版本控制：它就是运行时加载的东西，
+# 只备份 src 无法恢复"当时到底跑的是哪个产物"。
+*.log
+.DS_Store
+Thumbs.db
+node_modules/
+.edge-profile/

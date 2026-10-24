@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Orca Aquarium Backdrop",
+    "description": "Renders the orca-aquarium three.js scene as a click-through ambient layer across the Harness Web GUI, so the app stays readable and interactive on top."
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "name": "@local/orca-aquarium-backdrop",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Renders the orca-aquarium three.js scene as a click-through ambient layer across the Harness Web GUI.",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/vendor/orca-embed.js",
+    "src/client.js",
+    "scripts/build-client.mjs",
+    "cordis.patch.yml",
+    "locale/en.json",
+    "locale/zh.json",
+    "icon.svg"
+  ],
+  "scripts": {
+    "build": "node scripts/build-client.mjs"
+  },
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-theme"
+      ]
+    }
+  }
+}
