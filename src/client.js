@@ -313,14 +313,19 @@ window.__ModuleLoader__.load({
      */
     const SKIN_TOKENS = {
       /* ---- night: the ink-blue of 夜间参考1 / c5 ---- */
-      // The window. Translucent on purpose — this is where the aquarium shows
-      // through — but held at .40 rather than .30. The reason is a confusion
-      // this caused: the vendor's `deep` theme paints the seabed as stacked,
-      // evenly-spaced ripple bands (see screenshots/trim-deep.png), and through
-      // a 30% veil those bands read as a misplaced damask in the middle of the
-      // reading area rather than as the floor of the sea. A denser veil keeps the
-      // water and stops the dunes competing with the text.
-      '--dsw-alias-bg-base': { dark: 'rgba(76,97,129,.40)', light: 'rgba(207,231,237,.42)' },
+      // The window. This is where the aquarium shows through, and it is the only
+      // surface allowed to move with the water.
+      //
+      // It was briefly raised to .40 on a diagnosis that turned out to be wrong:
+      // the bands across the middle of the screen were not the `deep` theme's
+      // seabed showing through a thin veil, they were the skin's own damask
+      // tiling over an out-of-flow node the sidebar tag had picked by mistake
+      // (fixed in `paintSurface`). Nothing about a 30% veil needed defending, so
+      // it goes back down — and staying low is also what the feedback asked for:
+      // the clearer the window, the more the scene reads as a place rather than
+      // as a tinted panel. `veil-040` is the tag for the denser value if it is
+      // ever wanted back.
+      '--dsw-alias-bg-base': { dark: 'rgba(76,97,129,.30)', light: 'rgba(207,231,237,.34)' },
       // The skin proper: opaque enough to hold the reference plate colour
       // whatever the sea is doing.
       '--dsw-alias-bg-layer-1': { dark: 'rgba(76,100,140,.88)', light: 'rgba(215,238,243,.94)' },
