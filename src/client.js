@@ -6,15 +6,23 @@
  * Layout of the skin, bottom to top:
  *
  *   1. the sea    — a fixed layer behind the app (z-index -1), click-through, sharp
- *   2. the plates — sidebar and bottom row only, frosted, like the reference UI
+ *   2. the plates — near-opaque surfaces that carry the reference colours
  *   3. the app    — text, cards, composer, fully interactive on top
+ *
+ * Inside the sea layer, bottom to top: the vendor's scene, then the corner
+ * warmth, then the faint koi/lily ink artwork. All static paint — the drifting
+ * leaves and sparkle that used to sit here were removed at the clear-version
+ * request, so nothing in this stylesheet animates.
+ *
+ * The sidebar column carries one extra thing: a wave damask, painted on the
+ * element found by `paintSurface` and scoped so it cannot escape the column.
  *
  * No blur anywhere, and that is load-bearing rather than aesthetic: the plates
  * are .88–.94 opaque, so there is nothing left to frost, and `backdrop-filter`
  * also makes an element the containing block for `position: fixed` descendants.
- * The sidebar and bottom row both contain fixed descendants (ui-primitives'
- * Tooltip), so frosting them re-anchored tooltips to the column's padding box
- * instead of the viewport and clipped them under its `overflow: hidden`.
+ * The sidebar contains fixed descendants (ui-primitives' Tooltip), so frosting
+ * it re-anchored tooltips to the column's padding box instead of the viewport
+ * and clipped them under its `overflow: hidden`.
  *
  * Palette is token-level, in two schemes, and both are *measured* from the
  * reference frames rather than eyeballed:
@@ -55,15 +63,12 @@ window.__ModuleLoader__.load({
     const BACKDROP_CLASS = 'orca-sea-backdrop';
     const SCENE_CLASS = 'orca-sea-scene';
     const INK_CLASS = 'orca-sea-ink';
-    /** The drifting maple leaves — the references' warm counterpoint. */
-    const LEAF_CLASS = 'orca-sea-leaf';
-    /** The fine sparkle over the whole frame. */
-    const MOTE_CLASS = 'orca-sea-mote';
     /** The corner warmth (warm bottom-right, cool top-left). */
     const GLOW_CLASS = 'orca-sea-glow';
     const FRAME_ATTR = 'data-orca-glass-frame';
     const PART_ATTR = 'data-orca-plate';
-    /** The sidebar's inner root, which paints its own fill over the column. */
+    /** The sidebar column's paint surface — the deepest descendant that covers
+     *  the column, found by `paintSurface`, not literally its first child. */
     const SIDEBAR_ROOT_ATTR = 'data-orca-sidebar-plate';
     const STYLE_ATTR = 'data-orca-skin-style';
 
@@ -161,63 +166,6 @@ window.__ModuleLoader__.load({
       "<path d='M14 40 C12 24 18 12 28 2 L32 6 C22 14 18 26 20 40 Z'/>" +
       "<path d='M28 40 C26 28 34 18 46 12 L48 17 C38 22 32 30 34 40 Z'/>" +
       "</g>" +
-      "</g></svg>\")";
-
-    /**
-     * Maple leaves, as a mask for the same reason the koi are: one shape serves
-     * both palettes and the tint stays in CSS.
-     *
-     * This is the reference's loudest single effect. 夜间参考1 carries four big
-     * amber maple leaves in its corners — the only warm thing in an otherwise
-     * all-blue frame — and c5 repeats them down the left edge. They are what
-     * stops the composition reading as "blue filter over a screenshot": warm
-     * against cool is the whole colour idea, and the corners are where it lives.
-     *
-     * Drawn as a five-lobed maple with a stem, at four sizes/rotations. The
-     * lobes are asymmetric on purpose (a symmetric star reads as clip-art; the
-     * references' leaves are all slightly swept).
-     */
-    const LEAF_TILE =
-      "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='680' height='680' viewBox='0 0 680 680'><g fill='%23fff'>" +
-      /* Big leaf, upper left, swept. */
-      "<g transform='translate(64 96) rotate(-22) scale(2.6)'>" +
-      "<path d='M0 0 L-3 -11 L-13 -9 L-8 -17 L-18 -21 L-8 -24 L-11 -33 L-2 -28 L0 -40 L2 -28 L11 -33 L8 -24 L18 -21 L8 -17 L13 -9 L3 -11 Z'/>" +
-      "<path d='M0 0 L0 14 L1.6 14 L1.2 0 Z'/>" +
-      "</g>" +
-      /* Mid leaf, right edge. */
-      "<g transform='translate(596 196) rotate(38) scale(1.9)'>" +
-      "<path d='M0 0 L-3 -11 L-13 -9 L-8 -17 L-18 -21 L-8 -24 L-11 -33 L-2 -28 L0 -40 L2 -28 L11 -33 L8 -24 L18 -21 L8 -17 L13 -9 L3 -11 Z'/>" +
-      "<path d='M0 0 L0 14 L1.6 14 L1.2 0 Z'/>" +
-      "</g>" +
-      /* Small leaf, lower left. */
-      "<g transform='translate(126 566) rotate(14) scale(1.35)'>" +
-      "<path d='M0 0 L-3 -11 L-13 -9 L-8 -17 L-18 -21 L-8 -24 L-11 -33 L-2 -28 L0 -40 L2 -28 L11 -33 L8 -24 L18 -21 L8 -17 L13 -9 L3 -11 Z'/>" +
-      "<path d='M0 0 L0 14 L1.6 14 L1.2 0 Z'/>" +
-      "</g>" +
-      /* Tiny leaf, lower right, faint. */
-      "<g transform='translate(520 604) rotate(-48) scale(.95)' opacity='.6'>" +
-      "<path d='M0 0 L-3 -11 L-13 -9 L-8 -17 L-18 -21 L-8 -24 L-11 -33 L-2 -28 L0 -40 L2 -28 L11 -33 L8 -24 L18 -21 L8 -17 L13 -9 L3 -11 Z'/>" +
-      "<path d='M0 0 L0 14 L1.6 14 L1.2 0 Z'/>" +
-      "</g>" +
-      /* One drifting mid-frame, faint — the references have leaves over the art, not just at the rim. */
-      "<g transform='translate(348 402) rotate(8) scale(.7)' opacity='.45'>" +
-      "<path d='M0 0 L-3 -11 L-13 -9 L-8 -17 L-18 -21 L-8 -24 L-11 -33 L-2 -28 L0 -40 L2 -28 L11 -33 L8 -24 L18 -21 L8 -17 L13 -9 L3 -11 Z'/>" +
-      "</g>" +
-      "</g></svg>\")";
-
-    /**
-     * Drifting motes: the references' fine sparkle, which sits over everything
-     * and is what makes the frame feel like air rather than a flat gradient.
-     * Deliberately tiny and sparse — a dense field reads as noise.
-     */
-    const MOTE_TILE =
-      "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='320'><g fill='%23fff'>" +
-      "<circle cx='38' cy='52' r='1.5'/><circle cx='132' cy='26' r='1'/>" +
-      "<circle cx='214' cy='88' r='1.8'/><circle cx='286' cy='44' r='1.1'/>" +
-      "<circle cx='72' cy='148' r='1.2'/><circle cx='176' cy='126' r='1.6'/>" +
-      "<circle cx='258' cy='182' r='1'/><circle cx='24' cy='226' r='1.7'/>" +
-      "<circle cx='118' cy='248' r='1.1'/><circle cx='204' cy='286' r='1.4'/>" +
-      "<circle cx='292' cy='244' r='1.2'/><circle cx='156' cy='196' r='.9'/>" +
       "</g></svg>\")";
 
     /**
@@ -428,12 +376,12 @@ window.__ModuleLoader__.load({
       // hazards, so the shell's own chrome (brand mark, collapse toggle,
       // tooltips) lays out exactly as it does with no skin installed.
       //
-      // Two glows, both measured: the top-left cyan the references use on their
-      // brand corner, and a faint warm one from the lower right — the maple-leaf
-      // and lantern light in 夜间参考1's corners.
+      // Two glows, both measured off the references: the top-left cyan they put
+      // on the brand corner, and a faint warm one from the lower right, which is
+      // the lantern light in 夜间参考1's bottom corner.
       //
-      // Under the glows sits the wave damask. It is the FIRST layer in the list
-      // on purpose: `background-image` paints first-listed on top, so the ripples
+      // Above both sits the wave damask. It is the FIRST layer in the list on
+      // purpose: `background-image` paints first-listed on top, so the ripples
       // stay crisp instead of being veiled by the two glows — an engraved line
       // that a wash has passed over just looks like a smudge. Faintness is
       // carried by the tile's own stroke-opacity, not by stacking it lower.
@@ -478,19 +426,11 @@ window.__ModuleLoader__.load({
       '.', BACKDROP_CLASS, '{',
       'position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;',
       '--orca-ink:rgba(214,236,248,.16);',
-      // The leaves are the one warm thing in the frame, so they stay saturated
-      // and sit above the water's own blue. Sampled from 夜间参考1's corners
-      // (#e08c3c..#f5a44e), not invented.
-      '--orca-leaf:rgba(228,140,72,.30);',
-      '--orca-mote:rgba(226,242,255,.55);',
       '--orca-glow-warm:rgba(238,164,88,.16);',
       '--orca-glow-cool:rgba(120,196,232,.13);',
       '}',
       'body:not([data-ds-dark-theme]) .', BACKDROP_CLASS, '{',
       '--orca-ink:rgba(22,58,84,.11);',
-      // Daylight: leaves stay warm but thin out, and the glow turns into haze.
-      '--orca-leaf:rgba(214,132,68,.22);',
-      '--orca-mote:rgba(255,255,255,.70);',
       '--orca-glow-warm:rgba(246,196,132,.20);',
       '--orca-glow-cool:rgba(150,214,238,.20);',
       '}',
@@ -502,43 +442,6 @@ window.__ModuleLoader__.load({
       '-webkit-mask-repeat:repeat;mask-repeat:repeat;',
       '-webkit-mask-size:420px 420px;mask-size:420px 420px;',
       '}',
-      // The maple leaves: the references' warm counterpoint to an all-blue
-      // frame, and the single strongest thing the stock app does not have.
-      // Painted above the ink so a leaf reads as nearer than a koi, and under
-      // the plates so it never lands on text. `screen`-free: a plain mask keeps
-      // it cheap and lets the two palettes pick their own tint.
-      '.', LEAF_CLASS, '{',
-      'position:absolute;inset:0;pointer-events:none;',
-      'background-color:var(--orca-leaf);',
-      '-webkit-mask-image:', LEAF_TILE, ';mask-image:', LEAF_TILE, ';',
-      '-webkit-mask-repeat:repeat;mask-repeat:repeat;',
-      '-webkit-mask-size:680px 680px;mask-size:680px 680px;',
-      // A very slow drift, so the frame is alive without ever being busy. The
-      // 0.001 x-shift is deliberate: leaves fall, they do not travel sideways.
-      'animation:orca-leaf-drift 64s linear infinite;',
-      'will-change:transform;',
-      '}',
-      '@keyframes orca-leaf-drift{',
-      'from{transform:translate3d(0,-680px,0);}',
-      'to{transform:translate3d(38px,0,0);}',
-      '}',
-      // The sparkle. Two layers at different phases so the twinkle never
-      // pulses in lockstep, which is what makes a plain loop read as a loop.
-      '.', MOTE_CLASS, '{',
-      'position:absolute;inset:0;pointer-events:none;',
-      'background-color:var(--orca-mote);',
-      '-webkit-mask-image:', MOTE_TILE, ';mask-image:', MOTE_TILE, ';',
-      '-webkit-mask-repeat:repeat;mask-repeat:repeat;',
-      '-webkit-mask-size:320px 320px;mask-size:320px 320px;',
-      'animation:orca-mote-drift 38s linear infinite,orca-mote-twinkle 5.5s ease-in-out infinite alternate;',
-      '}',
-      '@keyframes orca-mote-drift{',
-      'from{transform:translate3d(0,0,0);}',
-      'to{transform:translate3d(-320px,-320px,0);}',
-      '}',
-      '@keyframes orca-mote-twinkle{',
-      'from{opacity:.45;}to{opacity:1;}',
-      '}',
       // The corner warmth. The references are lit from a warm bottom-right
       // corner (夜间参考1's lantern glow, c3's cyan pool); this is that light
       // as a paint layer rather than a filter, so it costs nothing per frame.
@@ -547,12 +450,6 @@ window.__ModuleLoader__.load({
       'background-image:',
       'radial-gradient(58% 46% at 100% 100%,var(--orca-glow-warm),transparent 68%),',
       'radial-gradient(46% 40% at 0% 0%,var(--orca-glow-cool),transparent 66%);',
-      '}',
-      // Reduced motion: the whole point of these layers is slow ambient drift,
-      // so honouring the preference means freezing them rather than removing
-      // them — the colour stays, the movement stops.
-      '@media (prefers-reduced-motion:reduce){',
-      '.', LEAF_CLASS, ',', '.', MOTE_CLASS, '{animation:none;}',
       '}',
     ].join('');
 
@@ -844,22 +741,21 @@ window.__ModuleLoader__.load({
       const glow = document.createElement('div');
       glow.className = GLOW_CLASS;
 
-      const leaf = document.createElement('div');
-      leaf.className = LEAF_CLASS;
-
-      const mote = document.createElement('div');
-      mote.className = MOTE_CLASS;
-
-      // Bottom to top, and the order is the depth order the references use:
+      // Bottom to top, in the depth order the references use:
       //   scene  — the aquarium
       //   glow   — the corner light that sits *in* the water
       //   ink    — the koi silhouettes, which read as far away
-      //   leaf   — the leaves, which read as near (they drift across the art)
-      //   mote   — the fine sparkle, which is the closest thing of all
+      //
+      // The drifting maple leaves and the sparkle motes that used to sit above
+      // these are gone by request: they were the busiest thing on the frame and
+      // the clear, quiet version reads better. Nothing in this stylesheet
+      // animates any more, so the layers are static paint and the reduced-motion
+      // media query came out with them.
+      //
       // No colour wash: the vendor's theme owns the water, and a second veil
       // over it washed the orca out. Every child is inside the same
       // click-through layer, so the app above is untouched.
-      layer.append(sceneHost, glow, ink, leaf, mote);
+      layer.append(sceneHost, glow, ink);
       document.body.appendChild(layer);
 
       let scene = null;
