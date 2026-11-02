@@ -593,7 +593,7 @@ window.__ModuleLoader__.load({
       const camera = app.camera;
       const controls = app.controls;
       const orca = app.orca;
-      if (camera === undefined || controls === undefined) return function () {};
+      if (camera === undefined || controls === undefined) return { stop: function () {}, apply: function () {} };
 
       // Damping makes OrbitControls recompute the position from its own internal
       // spherical state every `update()`, which fights a followed camera and shows
@@ -610,7 +610,17 @@ window.__ModuleLoader__.load({
         return position;
       }
 
-      function follow() {
+      /**
+       * Put the camera back on the animal. Exported (not just loop-internal)
+       * because the vendor moves the camera outside the loop too: `degrade()` and
+       * the ResizeObserver both reach `resize()`, which runs `applyViewFit()` and
+       * re-solves a standoff of its own — a different distance, plus a
+       * `FRAME_HEADROOM` lift. Left to the loop, that shows up as a one-frame
+       * lurch, which is the "it shook after sitting idle" symptom. Callers wrap
+       * `resize` and invoke this synchronously, so the vendor's reframing never
+       * survives to be composited.
+       */
+      function applyCamera() {
         const animal = orcaPosition();
         if (animal !== null) {
           // Offset ahead of and above the animal: close enough to read its shape,
@@ -625,14 +635,72 @@ window.__ModuleLoader__.load({
           controls.target.set(0, CONTROLS_TARGET_Y, 0);
           if (typeof camera.lookAt === 'function') camera.lookAt(0, CONTROLS_TARGET_Y, 0);
         }
+      }
+
+      function follow() {
+        applyCamera();
         raf = requestAnimationFrame(follow);
       }
 
       follow();
 
-      return function stop() {
-        if (raf !== 0) cancelAnimationFrame(raf);
-        raf = 0;
+      return {
+        apply: applyCamera,
+        stop: function stop() {
+          if (raf !== 0) cancelAnimationFrame(raf);
+          raf = 0;
+        },
+      };
+    }
+
+    /**
+     * Re-assert the followed camera whenever the vendor re-frames the shot.
+     *
+     * `resize()` is reached from three places: the window resize event, the
+     * container ResizeObserver, and `degrade()` — the runtime step-down that
+     * fires once a 48-frame window averages below 24fps. All three run
+     * `applyViewFit()`, which sets a camera of its own solving (different
+     * standoff, plus a `FRAME_HEADROOM` lift). Every call site goes through
+     * `this.resize()`, so one own-property intercepts all of them.
+     *
+     * Cleanup distinguishes an inherited method from an own property: deleting
+     * is right for the first and would destroy the original in the second.
+     *
+     * @param {object} app the vendor instance returned by `mountOrca`.
+     * @param {() => void} apply put the camera back on the animal.
+     * @returns {(() => void) | null} restore the original `resize`, or null when
+     * the instance cannot be wrapped.
+     */
+    function holdCameraOnResize(app, apply) {
+      if (app === null || app === undefined || typeof app.resize !== 'function') return null;
+      // Checked up front, not at first call: the wrapped resize runs on window
+      // resize and on the runtime step-down, so a bad `apply` would surface as a
+      // throw long after mount, far from its cause.
+      if (typeof apply !== 'function') {
+        console.error('[orca-aquarium-backdrop] refusing to wrap resize without a callable apply');
+        return null;
+      }
+      const original = app.resize;
+      const hadOwn = Object.prototype.hasOwnProperty.call(app, 'resize');
+      try {
+        app.resize = function resizeAndHold() {
+          original.call(app);
+          // Same task, before any frame is composited: the vendor's framing
+          // never becomes visible, so the step-down costs sharpness instead of
+          // a lurch.
+          apply();
+        };
+      } catch (error) {
+        console.error('[orca-aquarium-backdrop] could not hold the camera on resize', error);
+        return null;
+      }
+      return function restore() {
+        try {
+          if (hadOwn) app.resize = original;
+          else delete app.resize;
+        } catch (error) {
+          console.error('[orca-aquarium-backdrop] could not restore resize', error);
+        }
       };
     }
 
@@ -760,6 +828,7 @@ window.__ModuleLoader__.load({
 
       let scene = null;
       let unpinCamera = null;
+      let restoreResize = null;
       let stopThemeWatch = function () {};
       try {
         // Ambient background mode. `QUALITY` is a full settings object: the
@@ -780,6 +849,16 @@ window.__ModuleLoader__.load({
         state.mounted = scene !== null;
         if (scene !== null && scene.app !== undefined) {
           unpinCamera = frameOrca(scene.app);
+          // The vendor re-frames the shot outside our loop: `degrade()` (its
+          // runtime step-down, armed once the average of a 48-frame window falls
+          // below 24fps) calls `resize()`, and `resize()` runs `applyViewFit()`,
+          // which solves a *different* standoff and lifts the camera by
+          // `FRAME_HEADROOM`. The follow loop would only undo that on the next
+          // frame, so the dropped frame composited the vendor's framing — one
+          // visible lurch, minutes after load, exactly as reported. Re-asserting
+          // here keeps the step-down (it is a real guard for weak GPUs) while
+          // removing the lurch.
+          restoreResize = holdCameraOnResize(scene.app, unpinCamera.apply);
           // The scheme is a user preference the shell writes to
           // `body[data-ds-dark-theme]` at runtime, so the sea has to follow it
           // or a light/dark switch leaves a night ocean under a day UI.
@@ -855,13 +934,27 @@ window.__ModuleLoader__.load({
             }
             stopThemeWatch = function () {};
           }
-          if (typeof unpinCamera === 'function') {
+          // `frameOrca` hands back `{ stop, apply }` now that the camera has to
+          // be re-assertable outside the loop, so this must call `.stop()`. A
+          // `typeof unpinCamera === 'function'` test silently never matched and
+          // would have leaked the rAF loop across plugin reloads.
+          if (unpinCamera !== null && typeof unpinCamera.stop === 'function') {
             try {
-              unpinCamera();
+              unpinCamera.stop();
             } catch (error) {
               console.error('[orca-aquarium-backdrop] could not stop the camera loop', error);
             }
             unpinCamera = null;
+          }
+          // Before the scene is disposed: the wrapper belongs to this instance,
+          // and leaving it behind would outlive the thing it guards.
+          if (typeof restoreResize === 'function') {
+            try {
+              restoreResize();
+            } catch (error) {
+              console.error('[orca-aquarium-backdrop] could not restore resize', error);
+            }
+            restoreResize = null;
           }
           if (scene !== null) {
             try {
