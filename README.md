@@ -91,5 +91,8 @@ Client 半声明 `platform: web`、`immediately: true`，并注入
 
 ## 许可
 
-尚未指定开源许可证。`lib/vendor/orca-embed.js` 来自本地
-`orca-aquarium-shell` 项目，其内含 three.js，分发前请一并确认各自许可。
+本仓库自身代码采用 [MIT License](LICENSE)。
+
+`lib/vendor/orca-embed.js` 来自本地 `orca-aquarium-shell` 项目，其内含 three.js
+（同为 MIT）。该目录属于 vendor 代码，保留各自原有版权与许可声明；上面的 MIT
+适用于本仓库自行编写的部分。若要把 vendor 代码单独再分发，请一并保留其许可声明。
